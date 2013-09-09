@@ -1,0 +1,20 @@
+//
+<<<<<<< HEAD
+//  UIView+MWParallax.h
+=======
+//  AppDelegate.h
+>>>>>>> 733f1b4c749de2d100f8df73e89675fb244e452f
+//  iOS6 Parallax Demo
+//
+//  Created by Łukasz Przytuła on 06.09.2013.
+//  Copyright (c) 2013 Mildware. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import <CoreMotion/CoreMotion.h>
+
+@interface UIView (MWParallax)
+
+@property (nonatomic) CGFloat iOS6ParallaxIntensity;
+
+@end

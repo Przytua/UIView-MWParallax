@@ -1,0 +1,160 @@
+//
+<<<<<<< HEAD
+//  UIView+MWParallax.m
+=======
+//  AppDelegate.h
+>>>>>>> 733f1b4c749de2d100f8df73e89675fb244e452f
+//  iOS6 Parallax Demo
+//
+//  Created by Łukasz Przytuła on 06.09.2013.
+//  Copyright (c) 2013 Mildware. All rights reserved.
+//
+
+#import "UIView+MWParallax.h"
+<<<<<<< HEAD
+=======
+#import <math.h>
+#import <QuartzCore/QuartzCore.h>
+>>>>>>> 733f1b4c749de2d100f8df73e89675fb244e452f
+#import <objc/runtime.h>
+
+static CMMotionManager *_paralaxMotionManager;
+static CMAttitude *_referenceAttitude;
+static CMAttitude *_currentAttitude;
+static NSUInteger viewsRegisteredForParallax;
+static NSUInteger retriesSinceMotionUpdatesBegan;
+
+static const NSString * kMLDWRParallaxDepthKey = @"kMLDWRParallaxDepthKey";
+static const NSString * kMLDWROriginCenterKey = @"kMLDWROriginCenterKey";
+
+NSString * const kMLDWRMotionManagerUpdatedNotification = @"kMLDWRMotionManagerUpdatedNotification";
+
+@interface UIView ()
+
+@property (nonatomic, strong) CMMotionManager *paralaxMotionManager;
+@property (nonatomic) CGPoint originCenter;
+@property (nonatomic) CMAttitude *referenceAttitude;
+@property (nonatomic) CMAttitude *currentAttitude;
+
+@end
+
+@implementation UIView (MWParallax)
+
+#pragma mark - accessors
+
+- (void)setIOS6ParallaxIntensity:(CGFloat)iOS6ParallaxIntensity
+{
+  if (self.iOS6ParallaxIntensity == iOS6ParallaxIntensity)
+    return;
+  
+  if (iOS6ParallaxIntensity == 0.0) {
+    [self endParallaxUpdates];
+  } else if (self.iOS6ParallaxIntensity == 0.0) {
+    [self beginParallaxUpdates];
+  }
+  
+  objc_setAssociatedObject(self, (__bridge const void *)(kMLDWRParallaxDepthKey), @(iOS6ParallaxIntensity), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+-(CGFloat)iOS6ParallaxIntensity
+{
+  NSNumber * val = objc_getAssociatedObject(self, (__bridge const void *)(kMLDWRParallaxDepthKey));
+  if (!val) {
+    return 0.0;
+  }
+  return [val doubleValue];
+}
+
+- (void)setOriginCenter:(CGPoint)originCenter
+{
+  objc_setAssociatedObject(self, (__bridge const void *)(kMLDWROriginCenterKey), [NSValue valueWithCGPoint:originCenter], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (CGPoint)originCenter
+{
+  NSValue *val = objc_getAssociatedObject(self, (__bridge const void *)(kMLDWROriginCenterKey));
+  if (!val) {
+    return CGPointZero;
+  }
+  return [val CGPointValue];
+}
+
+- (void)setReferenceAttitude:(CMAttitude *)referenceAttitude
+{
+  _referenceAttitude = referenceAttitude;
+}
+
+- (CMAttitude *)referenceAttitude
+{
+  return _referenceAttitude;
+}
+
+- (void)setCurrentAttitude:(CMAttitude *)currentAttitude
+{
+  _currentAttitude = currentAttitude;
+}
+
+- (CMAttitude *)currentAttitude
+{
+  return _currentAttitude;
+}
+
+#pragma mark - motion
+
+- (CMMotionManager *)paralaxMotionManager {
+    if (!_paralaxMotionManager) {
+        _paralaxMotionManager = [[CMMotionManager alloc] init];
+    }
+    return _paralaxMotionManager;
+}
+
+- (void)motionsUpdated
+{
+  CGPoint attitudeDifference = CGPointMake((self.currentAttitude.roll - self.referenceAttitude.roll) * self.iOS6ParallaxIntensity, (self.currentAttitude.pitch - self.referenceAttitude.pitch) * self.iOS6ParallaxIntensity);
+  CGPoint destinationCenter = CGPointMake(self.originCenter.x + attitudeDifference.x, self.originCenter.y + attitudeDifference.y);
+  if (self.iOS6ParallaxIntensity > 0) {
+    self.center = CGPointMake(MAX(MIN(self.originCenter.x + self.iOS6ParallaxIntensity, destinationCenter.x), self.originCenter.x - self.iOS6ParallaxIntensity),
+                              MAX(MIN(self.originCenter.y + self.iOS6ParallaxIntensity, destinationCenter.y), self.originCenter.y - self.iOS6ParallaxIntensity));
+  } else {
+    self.center = CGPointMake(MIN(MAX(self.originCenter.x + self.iOS6ParallaxIntensity, destinationCenter.x), self.originCenter.x - self.iOS6ParallaxIntensity),
+                              MIN(MAX(self.originCenter.y + self.iOS6ParallaxIntensity, destinationCenter.y), self.originCenter.y - self.iOS6ParallaxIntensity));
+  }
+}
+
+- (void)beginParallaxUpdates {
+  self.originCenter = self.center;
+  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(motionsUpdated) name:kMLDWRMotionManagerUpdatedNotification object:nil];
+  if (viewsRegisteredForParallax++ == 0) {
+    self.referenceAttitude = nil;
+    retriesSinceMotionUpdatesBegan = 0;
+    CMMotionManager *motionManager = self.paralaxMotionManager;
+    
+    if (motionManager.deviceMotionAvailable) {
+      
+      [motionManager
+       startDeviceMotionUpdatesToQueue:[NSOperationQueue currentQueue]
+       withHandler: ^(CMDeviceMotion *motion, NSError *error) {
+         if (!self.referenceAttitude && retriesSinceMotionUpdatesBegan++ == 4) {
+           self.referenceAttitude = motion.attitude;
+           self.currentAttitude = motion.attitude;
+         } else if (self.referenceAttitude) {
+           self.currentAttitude = motion.attitude;
+           [[NSNotificationCenter defaultCenter] postNotificationName:kMLDWRMotionManagerUpdatedNotification object:nil];
+         }
+       }];
+    }
+  }
+}
+
+- (void)endParallaxUpdates {
+  self.center = self.originCenter;
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
+  if (viewsRegisteredForParallax-- == 0) {
+    CMMotionManager *motionManager = self.paralaxMotionManager;
+    if ([motionManager isDeviceMotionActive] == YES) {
+      [motionManager stopDeviceMotionUpdates];
+    }
+  }
+}
+
+@end
