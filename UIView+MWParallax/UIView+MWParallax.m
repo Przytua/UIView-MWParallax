@@ -192,6 +192,8 @@ static NSOperationQueue *parallaxOperationQueue;
 
 - (void)endParallaxUpdates {
   self.transform = CGAffineTransformIdentity;
+  NSArray *observerWithSelf = [self.mw_parallaxMotionChangesObservers filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"view == %@", self]];
+  [self.mw_parallaxMotionChangesObservers removeObjectsInArray:observerWithSelf];
   if (--mw_viewsRegisteredForParallax == 0) {
     CMMotionManager *motionManager = self.parallaxMotionManager;
     if ([motionManager isDeviceMotionActive] == YES) {
