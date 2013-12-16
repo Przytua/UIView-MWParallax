@@ -36,12 +36,13 @@
 #pragma mark - UIView+MWParallax
 
 static CMMotionManager *_mw_paralaxMotionManager;
-static CMAttitude *_mw_referenceAttitude;
-static CMAttitude *_mw_currentAttitude;
 static NSUInteger mw_viewsRegisteredForParallax;
 static NSUInteger mw_retriesSinceMotionUpdatesBegan;
 static CGPoint _mw_attitudeDifference;
 static NSMutableArray *_mw_parallaxMotionChangesObservers;
+
+static char currentAttitudeKey;
+static char referenceAttitudeKey;
 
 static const NSString * kMLDWRParallaxDepthKey = @"kMLDWRParallaxDepthKey";
 
@@ -84,24 +85,20 @@ NSString * const kMLDWRMotionManagerUpdatedNotification = @"kMLDWRMotionManagerU
   return [val doubleValue];
 }
 
-- (void)setMw_referenceAttitude:(CMAttitude *)mw_referenceAttitude
-{
-  _mw_referenceAttitude = mw_referenceAttitude;
+- (CMAttitude *)mw_currentAttitude {
+    return objc_getAssociatedObject(self, &currentAttitudeKey);
 }
 
-- (CMAttitude *)mw_referenceAttitude
-{
-  return _mw_referenceAttitude;
+- (void)setMw_currentAttitude:(CMAttitude *)mw_currentAttitude {
+    objc_setAssociatedObject(self, &currentAttitudeKey, mw_currentAttitude, OBJC_ASSOCIATION_RETAIN);
 }
 
-- (void)setMw_currentAttitude:(CMAttitude *)mw_currentAttitude
-{
-  _mw_currentAttitude = mw_currentAttitude;
+- (CMAttitude *)mw_referenceAttitude {
+    return objc_getAssociatedObject(self, &referenceAttitudeKey);
 }
 
-- (CMAttitude *)mw_currentAttitude
-{
-  return _mw_currentAttitude;
+- (void)setMw_referenceAttitude:(CMAttitude *)mw_referenceAttitude {
+    objc_setAssociatedObject(self, &referenceAttitudeKey, mw_referenceAttitude, OBJC_ASSOCIATION_RETAIN);
 }
 
 - (void)setMw_attitudeDifference:(CGPoint)mw_attitudeDifference
