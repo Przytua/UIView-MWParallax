@@ -16,3 +16,6 @@ To use this you need to include CoreMotion.framework to your project.
 This currently works only with ARC!
 
 <img src="http://imageshack.us/a/img51/2786/84h.gif"/>
+
+Credits:
+Thanks to gbammc (https://github.com/gbammc) for fixing issue #1
